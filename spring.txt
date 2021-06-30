@@ -1,0 +1,177 @@
+## Spring知识点总结
+
+### Spring框架:Spring框架是一个开源的容器性质的轻量级框架。主要有三大特点：容器、IOC（控制反转）、AOP（面向切面编程）。
+
+1. 容器：
+
+   优点：Spring框架是一个容器，能够管理项目中的所有对象。
+
+2. IOC(控制反转)： 指得是将对象的创建权反转给Spring。作用是实现了程序的解耦合。
+
+   优点：Spring将创建对象的方式反转了，从程序员自己创建反转给了程序。
+
+   DI:依赖注入，需要有IOC环境，在Spring创建Bean对象时，动态的将依赖对象注入到Bean对象中去。依赖注入最大的好处就是解耦合。
+
+3. AOP(面向切面)：
+
+   优点：面向切面编程，简而言之，就是将纵向重复的代码横向抽取出来。Spring框架应用了面向切面的思想，主要体现在为容器中管理的对象生成动态代理对象。 
+
+   - Joinpoint（连接点）：目标对象中，所有可以增强的方法
+
+
+   - Pointcut（切入点）：目标对象，已经增强的方法。
+
+
+   - Advice（通知/增强）：增强的代码
+
+
+   - Target（目标对象）：被代理对象
+
+
+   - Weaving（织入）：将通知应用到切入点的过程
+
+
+   - Proxy（代理）：将通知织入目标对象之后，形成代理对象
+
+   应用AOP：
+
+   1. 导包
+
+   2. 准备目标对象
+
+   3. 准备通知
+
+   4. 将通知织入目标对象中
+
+      xml配置方式：
+
+      ```xml
+      <?xml version="1.0" encoding="UTF-8"?>
+      <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:aop="http://www.springframework.org/schema/aop"
+          xmlns:tx="http://www.springframework.org/schema/tx"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+              http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+              http://www.springframework.org/schema/aop
+              http://www.springframework.org/schema/aop/spring-aop-4.2.xsd">      
+      </beans>
+      ```
+
+      
+
+      注解配置方式：
+
+      
+
+#### 工厂容器
+
+BeanFactory接口：
+
+- Spring框架的顶层接口，是最原始的接口，通过new （BeanFactory的实现类）来启动Spring容器时，并不会创建Spring容器里面的对象，只有在每次通过getBean()获得对象时才会创建。
+
+  ```java
+  BeanFactory beanFactory = new XmlBeanFactory(new ClassPathResource("applicationContext.xml"));
+  
+  IHelloService helloService = (IHelloService) beanFactory.getBean("helloService");
+  
+  helloService.sayHello();
+  ```
+
+  
+
+ApplicationContext接口：
+
+- 用来替代BeanFactory接口的，通过new （ApplicationContext接口的实现类）ClassPathXmlApplicationContext来启动Spring容器时，就会创建容器中配置的所有对象。
+
+#### Bean标签
+
+- 常见属性：
+
+  name属性：给被管理的对象起个名称，获得对象时要根据该名称来获得。
+
+  class属性：被管理对象的完整类名。
+
+  scope属性：scope属性常见的有两个属性值，singleton和prototype，这两个属性值用   来指定创建对象时是单例还是多例，默认为singleton(单例)，但在整合整合struts2 时,ActionBean必须配置为多例的.
+
+- 通过配置<bean>标签来生成Bean对象的方式：
+
+  空参构造方式、静态工厂方式和实例工厂方式。
+
+  空参构造方式：
+
+  ```xml
+  <bean id="bean1" class="cn.itcast.spring.b_instance.Bean1"></bean>
+  ```
+
+- bean的生命周期：
+
+  bean的定义、bean的初始化、bean的调用和bean的销毁
+
+  在配置文件里面通过<bean></bean>来完成bean的定义，通过配置init-method属性来完成bean的初始化，通过得到bean的实例对象来完成bean的调用，通过配置destory-method属性来完成bean的销毁。
+
+- 作用域：
+
+  - singleton:
+
+    当一个bean的作用域为singleton, 那么Spring IoC容器中只会存在一个共享的bean实例，并且所有对bean的请求，只要id与该bean定义相匹配，则只会返回bean的同一实例。
+
+  - prototype:
+
+    Prototype作用域的bean会导致在每次对该bean请求（将其注入到另一个bean中，或者以程序的方式调用容器的getBean() 方法）时都会创建一个新的bean实例。根据经验，对所有有状态的bean应该使用prototype作用域，而对无状态的bean则应该使用 singleton作用域。
+
+  - request:
+
+    在一次HTTP请求中，一个bean定义对应一个实例；即每次HTTP请求将会有各自的bean实例， 它们依据某个bean定义创建而成。该作用 域仅在基于web的Spring ApplicationContext情形下有效。
+
+  - session:
+
+    在一个HTTP Session中，一个bean定义对应一个实例。该作用域仅在基于web的Spring ApplicationContext情形下有效。
+
+  - global session:
+
+    在一个全局的HTTP Session中，一个bean定义对应一个实例。典型情况下，仅在使用portlet context的时候有效。该作用域仅在基于 web的Spring ApplicationContext情形下有效。
+
+  #### 注解：在spring的主配置文件中通过Context:component-scan标签来开启使用注解的开关。
+
+  #####  用注解将对象注册到Spring容器当中的4种方式
+
+  1. @Component()
+  2. @Service()
+  3. @Controller()
+  4. @Respository()
+
+  ##### 指定对象的作用范围
+
+  1. @Scope(scopeName="singleton")
+
+  ##### 用注解的方式来完成属性注入
+
+  1. 值类型注入：@Value()
+  2. 引用类型注入：@Autowired、@Autowired和@Qualifier()二者结合、@Resource()
+
+  #### 事务管理
+
+  事务就是对一系列的数据库操作（比如插入多条数据）进行统一的提交或回滚操作，如果插入成功，那么一起成功，如果中间有一条出现异常，那么回滚之前的所有操作。这样可以防止出现脏数据，防止数据库数据出现问题。
+
+  ##### 4个特性：
+
+  1. 原子性（Atomic）：事务是由一个或多个活动所组成的一个工作单元。原子确保事务中的所有操作全部发生或全部不发生。如果所有的活动都成功了，事务也就成功了。如果任意一个活动失败了，整个事务也失败并回滚。
+  2. 一致性（Consistent）：一旦事务完成（不管成功还是失败），系统必须确保它所建模的业务处于一致的状态。现实的数据不应该被损坏。
+  3. 隔离性（Isolated）:事务允许多个用户对相同的数据进行操作，每个用户的操作不会与其他用户纠缠在一起。因此，事务应该被彼此隔离，避免发生同步读写相同数据的事情（注意的是，隔离性往往涉及到锁定数据库中的行或表）。
+  4. 持久性（Durable）:一旦事务完成，事务的结果应该持久化，这样就能从任何的系统崩溃中恢复过来。这一般会涉及将结果存储到数据库或其他形式的持久化存储中。
+
+  ##### 在Spring的核心配置文件applicationContext.xml中配置事务，主要配置三大方面：事务管理器、事务通知和定义事务性切面。
+
+  ##### 事务管理器
+
+  1. 操作事务的方法：开启事务、提交事务、回滚事务。
+
+  #####  事务的隔离级别
+
+  1. 读未提交（uncommitted）：允许读取尚未提交的数据变更。可能会导致脏读、幻读或不可重复读。
+  2. 读已提交（committed）:允许读取并发事务已经提交的数据。可以阻止脏读、但是幻读或不可重复读仍有可能发生。
+  3. 可重复读（repeatable_read）：可以阻止脏读和不可重复读，但可能会导致幻读。
+  4. 串行化（serializable）：完全服从ACID的隔离级别，确保阻止脏读、不可重复读以及幻读。这是最慢的事务隔离级别，因为它通常是通过完全锁定事务相关的数据库表来实现的。
+
+  ##### 声明式事务的第三个属性是只读。read-only=”true” 或者 read-only=”false”，在定义查询方法时，通常设置为只读。

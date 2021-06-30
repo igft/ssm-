@@ -1,0 +1,817 @@
+
+<center><font size="72">mybatis</font></center>
+
+## 1.环境的配置
+
+
+
+
+## 3.GRUP
+
+
+
+### 1.在Dao/mapper中编写接口
+
+```java
+public interface UserDao {
+    //查询全部用户
+    List<User> getMapper();
+    //根据ID查询用户
+    User getUserById(int id);
+    //添加用户
+    int UserAdd(User user);
+    //修改用户
+    int UserUpdate(User user);
+    //根据ID删除用户
+    int UserDelete(int id);
+}
+```
+
+### 2.编写对应的mapper.xml
+
+#### 1、namespace 
+
+​		namespace中的包名要与Dao/Mapper接口名一致
+
+#### 2、select
+
+选择、查询语句：
+
+```Java
+<select id="方法名" resultType="Sql语句执行的返回值" parameterType="参数类型"></select>
+```
+
+```xml
+<!--    查询所有用户-->
+    <select id="getMapper" resultType="com.rzpt.pojo.User">
+       select * from mybatis.user
+   </select>
+    <!--根据ID查询用户-->
+    <select id="getUserById" resultType="com.rzpt.pojo.User">
+        select * from user where id = #{id}
+    </select>
+```
+
+- @test
+
+  ```java
+   @Test
+      public void Test(){
+          SqlSession sqlSession = MybatisUtil.getSqlSession();
+  
+          UserDao mapper = sqlSession.getMapper(UserDao.class);
+          List<User> userList = mapper.getMapper();
+  
+          for (User u : userList
+               ) {
+              System.out.println(u);
+          }
+          sqlSession.close();
+      }
+  
+      @Test
+      public void getUserById(){
+          SqlSession sqlSession = MybatisUtil.getSqlSession();
+          UserDao mapper = sqlSession.getMapper(UserDao.class);
+          User userById = mapper.getUserById(2);
+          System.out.println(userById);
+          sqlSession.close();
+      }
+  ```
+
+
+
+#### 3、insert
+
+```xml
+<!--   添加用户-->
+    <insert id="UserAdd" parameterType="com.rzpt.pojo.User">
+        insert into mybatis.user (id,name,pwd) values(#{id},#{name},#{pwd})
+    </insert>
+```
+
+
+
+@test
+
+```java
+@Test
+    public void UserAdd(){
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+       UserDao mapper = sqlSession.getMapper(UserDao.class);
+        User user = new User();
+        user.setId(4);
+        user.setName("恶魔城");
+        user.setPwd("123456");
+        int i = mapper.UserAdd(user);
+        if (i!=0){
+            System.out.println("添加成功");
+        }
+        //提交事务
+        sqlSession.commit();
+        sqlSession.close();
+
+    }
+```
+
+**需要提交事务才能成功在数据库里添加数据 **   sqlSession.commit();
+
+#### 4、update
+
+```xml
+<!--    修改用户-->
+    <update id="UserUpdate" parameterType="com.rzpt.pojo.User">
+        update mybatis.user set name=#{name},pwd=#{pwd} where id = #{id}
+    </update>
+```
+
+
+
+@test
+
+```java
+ @Test
+    public void UserUpdate(){
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        UserDao mapper = sqlSession.getMapper(UserDao.class);
+        int i = mapper.UserUpdate(new User(4,"刺客信条","1234563"));
+        sqlSession.commit();
+        sqlSession.close();
+    }
+```
+
+**需要提交事务才能成功在数据库里添加数据 **   sqlSession.commit();
+
+#### 5、delete
+
+```xml
+    <delete id="UserDelete" parameterType="int">
+        delete from mybatis.user where id=#{id}
+    </delete>
+```
+
+@test
+
+```java
+  @Test
+    public void UserDelete(){
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        UserDao mapper = sqlSession.getMapper(UserDao.class);
+        int i = mapper.UserDelete(4);
+        sqlSession.commit();
+        sqlSession.close();
+    }
+```
+
+#### 6.Map
+
+Map可以自定义键名
+
+Map传递参数，直接在sql中取出key即可！  【parameterType="map"】
+
+对象传递参数，直接在sql中取对象的属性即可！  【paramaterType="Object"】
+
+只有一个基本类型参数的情况下，可以直接在sql中取到
+
+多个参数用Map，**或者注解**
+
+```xml
+<!--    用map查询用户-->
+    <select id="getUserById2" resultType="com.rzpt.pojo.User" parameterType="map">
+        select * from user where name = #{username} and pwd = #{password}
+    </select>
+```
+
+```java
+@Test
+    public void getUserById2(){
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        UserDao mapper = sqlSession.getMapper(UserDao.class);
+        Map<Object,String> map = new HashMap<Object, String>();
+        map.put("username","张三");
+        map.put("password","123456");
+        User userById2 = mapper.getUserById2(map);
+        System.out.println(userById2);
+        sqlSession.close();
+    }
+```
+
+7、模糊查询
+
+1.Java代码执行的时候，传递通配符%%
+
+```xml
+<!--    模糊查询-->
+    <select id="getUserLike" resultType="com.rzpt.pojo.User">
+        select * from user where name like #{name};
+    </select>
+```
+
+```java
+@Test
+    public void getUserLike(){
+        SqlSession sqlSession = MybatisUtil.getSqlSession();
+        UserDao mapper = sqlSession.getMapper(UserDao.class);
+        List<User> getUserLike = mapper.getUserLike("%王%");
+        System.out.println(getUserLike);
+        sqlSession.close();
+    }
+```
+
+2.在sql拼接中使用通配符
+
+```xml
+<!--    模糊查询-->
+    <select id="getUserLike" resultType="com.rzpt.pojo.User">
+        select * from user where name like "%"#{name}"%";
+    </select>
+```
+
+
+
+###### **注意**
+
+报错：
+
+```java
+A query was run and no Result Maps were found for the Mapped Statement 'com.rzpt.dao.UserDao.getUserById'.  It's likely that neither a Result Type nor a Result Map was specified.
+```
+
+mybatis中的所有查询，都必须返回resultType或者resultMap的值，否则就会报如上错误的。
+
+报错：
+
+```java
+1字节的UTF-8序列的字节1无效
+```
+
+手动将<?xml version="1.0" encoding="UTF-8"?>中的UTF-8更改成UTF8
+
+
+
+## 4.配置解析
+
+### 1、核心配置
+
+- mybatis-config.xml
+
+   ```properties
+  配置
+  MyBatis 的配置文件包含了会深深影响 MyBatis 行为的设置和属性信息。 配置文档的顶层结构如下：
+  
+  configuration（配置）
+  properties（属性）
+  settings（设置）
+  typeAliases（类型别名）
+  typeHandlers（类型处理器）
+  objectFactory（对象工厂）
+  plugins（插件）
+  environments（环境配置）
+  environment（环境变量）
+  transactionManager（事务管理器）
+  dataSource（数据源）
+  databaseIdProvider（数据库厂商标识）
+  mappers（映射器）
+  ```
+
+### 2.环境配置（environment）
+
+[environments（环境配置）](https://mybatis.org/mybatis-3/zh/configuration.html#environments)
+
+- environment（环境变量）
+  - transactionManager（事务管理器）
+  - dataSource（数据源）
+
+mybatis 可以配置适应多种环境
+
+**不过要记住：尽管可以配置多个环境，但每个 SqlSessionFactory 实例只能选择一种环境。**
+
+Mybatis默认的事务管理器就是JDBC ,连接池：POOLED
+
+### 3.属性（properties）
+
+db.properties
+
+```properties
+driver=com.mysql.jdbc.Driver
+url=jdbc:mysql://localhost:3306/mybatis?useSSL=true&amp;useUnicode=true&amp;characterEncoding=utf8
+username=root
+password=123456
+```
+
+
+
+我们可以通过properties属性来实现引用配置文件
+
+这些属性可以在外部进行配置，并可以进行动态替换。你既可以在典型的 Java 属性文件中配置这些属性，也可以在 properties 元素的子元素中设置
+
+```properties
+<properties resource="org/mybatis/example/config.properties">
+  <property name="username" value="dev_user"/>
+  <property name="password" value="F2Fa3!33TYyg"/>
+</properties>
+```
+
+设置好的属性可以在整个配置文件中用来替换需要动态配置的属性值
+
+```properties
+<dataSource type="POOLED">
+  <property name="driver" value="${driver}"/>
+  <property name="url" value="${url}"/>
+  <property name="username" value="${username}"/>
+  <property name="password" value="${password}"/>
+</dataSource>
+```
+
+
+
+- 可以直接引入外部文件
+- 可以在其中增加一些属性配置
+- 如果两个文件有同一个字段，优先使用外部配置文件的！
+
+### 4.类型别名（typeAliases）
+
+- [typeAliases（类型别名）](https://mybatis.org/mybatis-3/zh/configuration.html#typeAliases)
+
+- 类型别名是为Java类型设置一个短的名字。
+
+- 存在的意义仅在于用来减少类完全限定名的沉余
+
+  ```xml
+   <typeAliases>
+          <typeAlias type="com.rzpt.pojo.User" alias="user"/>
+   </typeAliases>
+  ```
+
+也可以指定一个包名，MyBatis 会在包名下面搜索需要的 Java Bean，比如：
+
+```xml
+<typeAliases>
+  <package name="com.rzpt.pojo"/>
+</typeAliases>
+```
+
+**区别：**
+
+在实体类比较少的时候，使用第一种方法，比较多的时候使用第二种
+
+第一种可以DIY别名，第二种则不行，如果要改名需要在实体类中加注释@Aliases
+
+```xml
+@Alias("author")
+public class Author {
+    ...
+}
+```
+
+第二种默认名为该类的小写字母   user
+
+### 5.设置
+
+- [settings（设置）](https://mybatis.org/mybatis-3/zh/configuration.html#settings)
+
+这是 MyBatis 中极为重要的调整设置，它们会改变 MyBatis 的运行时行为
+
+### 6.其他配置
+
+- [typeHandlers（类型处理器）](https://mybatis.org/mybatis-3/zh/configuration.html#typeHandlers)
+- [objectFactory（对象工厂）](https://mybatis.org/mybatis-3/zh/configuration.html#objectFactory)
+- [plugins（插件）](https://mybatis.org/mybatis-3/zh/configuration.html#plugins)
+
+### 7.映射器（mapper）
+
+MapperRegistry:注册绑定我们的Mapper文件
+
+方式一：使用相对于类路径的资源引用
+
+```xml
+<mappers>
+    <!--每一个Mapper.xml都需要在Mybatis核心配置文件中注册-->
+    <mapper resource="com/rzpt/dao/UserMapper.xml"></mapper>
+</mappers>
+```
+
+方式二：使用映射器接口实现类的完全限定类名
+
+```xml
+<mappers>
+    <mapper class="com.rzpt.dao.UserMapper"></mapper>
+</mappers>
+```
+
+注意点：
+
+- 接口和他的Mapper配置文件必须在同一包下，且同名
+
+方式三：将包内的映射器接口实现全部注册为映射器
+
+```xml
+<mappers>
+    <package name="com.rzpt.dao"/>
+</mappers>
+```
+
+注意点：
+
+- 接口和他的Mapper配置文件必须在同一包下，且同名
+
+练习：
+
+- 将数据库配置文件外部接入
+- 实体类别名
+- 保证UserMapper接口和UserMapper.xml改为一致，在同一包下
+
+### 8.生命周期和作用域
+
+## 5.ResultsetMap结果集映射
+
+在这些情况下，MyBatis 会在幕后自动创建一个 `ResultMap`，再根据属性名来映射列到 JavaBean 的属性上。如果列名和属性名不能匹配上，可以在 SELECT 语句中设置列别名（这是一个基本的 SQL 特性）来完成匹配。比如：
+
+```xml
+<select id="selectUsers" resultType="User">
+  select
+    user_id             as "id",
+    user_name           as "userName",
+    hashed_password     as "hashedPassword"
+  from some_table
+  where id = #{id}
+</select>
+```
+
+显式使用外部的 `resultMap`
+
+```xml
+<mapper namespace="com.rzpt.mapper.UserMapper">
+    <resultMap id="UserById" type="user">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="pwd"/>
+
+    </resultMap>
+
+    <!--根据ID查询用户-->
+    <select id="getUserById" resultMap="UserById">
+        select * from user where id = #{id}
+    </select>
+
+</mapper>
+```
+
+
+
+## 6.日志
+
+### 6.1日志工厂
+
+| logPrefix         | 指定 MyBatis 增加到日志名称的前缀。                   | 任何字符串（value值）                                        | 未设置 |
+| ----------------- | ----------------------------------------------------- | ------------------------------------------------------------ | ------ |
+| logImpl（name值） | 指定 MyBatis 所用日志的具体实现，未指定时将自动查找。 | SLF4J \| **LOG4J （*）**\| LOG4J2 \| JDK_LOGGING \| COMMONS_LOGGING \| **STDOUT_LOGGING （*）**\| NO_LOGGING | 未设置 |
+
+### 6.2  **STDOUT_LOGGING**自带默认
+
+
+
+```tex
+//日志实现
+Opening JDBC Connection     ---》打开JDBC的连接
+Created connection 1032986144.  ---》创建一个connection连接对象
+Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@3d921e20]
+==>  Preparing: select * from user where id = ?   ---》预编译的SQL语句
+==> Parameters: 2(Integer)    ---》传递的参数
+<==    Columns: id, name, pwd    ---》查询的列
+<==        Row: 2, 李四, 345656   ---》查询的记录
+<==      Total: 1                  ---》查询的记录条数
+User{id=2, name='李四', password='345656'}  ---》结果
+Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@3d921e20]
+Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@3d921e20]
+Returned connection 1032986144 to pool.     ---》connection返回到连接池
+```
+
+### 6.3  LOG4J 
+
+什么是Log4j？
+
+- Log4j是[Apache](https://baike.baidu.com/item/Apache/8512995)的一个开源项目，通过使用Log4j，我们可以控制日志信息输送的目的地是[控制台](https://baike.baidu.com/item/控制台/2438626)、文件、[GUI](https://baike.baidu.com/item/GUI)组件
+
+- 我们也可以控制每一条日志的输出格式
+
+- 通过定义每一条日志信息的级别，我们能够更加细致地控制日志的生成过程
+
+- 通过一个[配置文件](https://baike.baidu.com/item/配置文件/286550)来灵活地进行配置，而不需要修改应用的代码。
+
+  
+
+1. 导入LOG4J的包
+
+   ```xml
+   <dependency>
+   <groupId>log4j</groupId>
+   <artifactId>log4j</artifactId>
+   <version>1.2.17</version>
+   </dependency>
+   ```
+
+2. log4j.properties
+
+   ```properties
+   log4j.rootLogger=DEBUG,console,dailyFile
+   log4j.additivity.org.apache=true
+   # 控制台(console)
+   log4j.appender.console=org.apache.log4j.ConsoleAppender
+   log4j.appender.console.Threshold=DEBUG
+   log4j.appender.console.ImmediateFlush=true
+   log4j.appender.console.Target=System.err
+   log4j.appender.console.layout=org.apache.log4j.PatternLayout
+   log4j.appender.console.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   # 日志文件(logFile)
+   log4j.appender.logFile=org.apache.log4j.FileAppender
+   log4j.appender.logFile.Threshold=DEBUG
+   log4j.appender.logFile.ImmediateFlush=true
+   log4j.appender.logFile.Append=true
+   log4j.appender.logFile.File=D:/logs/log.log4j
+   log4j.appender.logFile.layout=org.apache.log4j.PatternLayout
+   log4j.appender.logFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   # 回滚文件(rollingFile)
+   log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
+   log4j.appender.rollingFile.Threshold=DEBUG
+   log4j.appender.rollingFile.ImmediateFlush=true
+   log4j.appender.rollingFile.Append=true
+   log4j.appender.rollingFile.File=D:/logs/log.log4j
+   log4j.appender.rollingFile.MaxFileSize=200KB
+   log4j.appender.rollingFile.MaxBackupIndex=50
+   log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+   log4j.appender.rollingFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   # 定期回滚日志文件(dailyFile)
+   log4j.appender.dailyFile=org.apache.log4j.DailyRollingFileAppender
+   log4j.appender.dailyFile.Threshold=DEBUG
+   log4j.appender.dailyFile.ImmediateFlush=true
+   log4j.appender.dailyFile.Append=true
+   log4j.appender.dailyFile.File=D:/logs/log.log4j
+   log4j.appender.dailyFile.DatePattern='.'yyyy-MM-dd
+   log4j.appender.dailyFile.layout=org.apache.log4j.PatternLayout
+   log4j.appender.dailyFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   # 应用于socket
+   log4j.appender.socket=org.apache.log4j.RollingFileAppender
+   log4j.appender.socket.RemoteHost=localhost
+   log4j.appender.socket.Port=5001
+   log4j.appender.socket.LocationInfo=true
+   # Set up for Log Factor 5
+   log4j.appender.socket.layout=org.apache.log4j.PatternLayout
+   log4j.appender.socket.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   # Log Factor 5 Appender
+   log4j.appender.LF5_APPENDER=org.apache.log4j.lf5.LF5Appender
+   log4j.appender.LF5_APPENDER.MaxNumberOfRecords=2000
+   # 发送日志到指定邮件
+   log4j.appender.mail=org.apache.log4j.net.SMTPAppender
+   log4j.appender.mail.Threshold=FATAL
+   log4j.appender.mail.BufferSize=10
+   log4j.appender.mail.From = xxx@mail.com
+   log4j.appender.mail.SMTPHost=mail.com
+   log4j.appender.mail.Subject=Log4J Message
+   log4j.appender.mail.To= xxx@mail.com
+   log4j.appender.mail.layout=org.apache.log4j.PatternLayout
+   log4j.appender.mail.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+   ```
+
+3. 配置Log4j
+
+   ```xml
+    <settings>
+           <setting name="logImpl" value="LOG4J"/>
+       </settings>
+   ```
+
+4. 输出
+
+   ```tex
+   [DEBUG] 2021-05-05 11:37:07,259(162) --> [main] org.apache.ibatis.transaction.jdbc.JdbcTransaction.openConnection(JdbcTransaction.java:137): Opening JDBC Connection  
+   [DEBUG] 2021-05-05 11:37:07,463(366) --> [main] org.apache.ibatis.datasource.pooled.PooledDataSource.popConnection(PooledDataSource.java:406): Created connection 897074030.  
+   [DEBUG] 2021-05-05 11:37:07,464(367) --> [main] org.apache.ibatis.transaction.jdbc.JdbcTransaction.setDesiredAutoCommit(JdbcTransaction.java:101): Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@3578436e]  
+   [DEBUG] 2021-05-05 11:37:07,466(369) --> [main] org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:159): ==>  Preparing: select * from user where id = ?   
+   [DEBUG] 2021-05-05 11:37:07,487(390) --> [main] org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:159): ==> Parameters: 2(Integer)  
+   [DEBUG] 2021-05-05 11:37:07,505(408) --> [main] org.apache.ibatis.logging.jdbc.BaseJdbcLogger.debug(BaseJdbcLogger.java:159): <==      Total: 1  
+   User{id=2, name='李四', password='345656'}
+   [DEBUG] 2021-05-05 11:37:07,505(408) --> [main] org.apache.ibatis.transaction.jdbc.JdbcTransaction.resetAutoCommit(JdbcTransaction.java:123): Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@3578436e]  
+   [DEBUG] 2021-05-05 11:37:07,506(409) --> [main] org.apache.ibatis.transaction.jdbc.JdbcTransaction.close(JdbcTransaction.java:91): Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@3578436e]  
+   [DEBUG] 2021-05-05 11:37:07,506(409) --> [main] org.apache.ibatis.datasource.pooled.PooledDataSource.pushConnection(PooledDataSource.java:363): Returned connection 897074030 to pool.  
+   ```
+
+   
+
+#### 简单使用
+
+1. 在要使用log4j的类中，导入包import org.apache.log4j.Logger;
+
+2. 日志对象，参数为当前类的class
+
+   ```java
+   static Logger logger = Logger.getLogger(UserDaoTest.class);
+   ```
+
+3. 日志级别
+
+   ```java
+   logger.info("info：进入testLog4j方法");
+   logger.debug("debug：进入testLog4j方法");
+   logger.error("error：进入testLog4j方法");
+   ```
+
+   
+
+## 7.分页
+
+
+
+
+
+## 8.使用注解开发
+
+### 8.2注解开发
+
+1. 注解在接口上实现
+
+   ```java
+   @Select * from user
+   List<User> getUsers();
+   //起别名 
+   @Select id,name,pwd as password from user
+   List<User> getUsers();
+   ```
+
+2. 需要在核心配置文件中绑定接口
+
+   ```xml
+   <!--绑定接口-->
+   <mappers>
+       <mapper class="com.rzpt.mapper.UserMapper"></mapper>
+   </mappers>
+   ```
+
+3. 测试
+
+   
+
+本质：反射机制实现
+
+底层：动态代理
+
+
+
+### 8.3使用注解写sql语句
+
+```java
+public interface UserMapper {
+    //查询全部用户
+//    @Select("select * from user")
+    //起别名
+    @Select("select id,name,pwd as password from user")
+    List<User> getMapper();
+
+    //通过id查询用户
+    @Select("select * from user where id = #{id}")
+    List<User> getMapperById(@Param("id") int id);
+
+    //修改用户
+    @Update("update user set name=#{name},pwd=#{password} where id= 1")
+    int updateMapper(HashMap<String, String> user);
+
+    //删除用户
+    @Delete("delete from user where id = #{id}")
+    int deleteMapper(int id);
+
+    //添加用户
+    @Insert("insert into user(id,name,pwd) values(#{id},#{name},#{password}) ")
+    int insertMapper(User user);
+
+}
+```
+
+在MyBatisUtil中设置是否要自动提交事务，一般不打开
+
+```java
+ public static SqlSession getSqlSession(){
+        return sqlSessionFactory.openSession(true);//这里加上true表示自动提交事务，可以在debug模式中查看是否是打开的
+    }
+```
+
+#{}和${}的区别
+
+#{}很大程度上防止sql注入
+
+案发当时
+
+## 9.Lombok
+
+- 怎么使用？
+
+  1. 下载插件（idea）
+
+     file>setting>Plugins 中搜索Lombok并下载
+
+  2. ```xml
+     <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+     
+      <dependency>
+             <groupId>org.projectlombok</groupId>
+             <artifactId>lombok</artifactId>
+             <version>1.18.20</version>
+             <scope>provided</scope>
+         </dependency>
+     ```
+
+     
+
+-  常用注解
+
+  - @Getter
+
+  - @Setter
+
+  - @Data
+
+  - ### @NoArgsConstructor
+
+  - ### @AllArgsConstructor
+
+  - ### @RequiredArgsConstructor
+
+  - ### @ToString
+
+  - ### @EqualsAndHashCode
+
+  
+
+## 10.多对一处理
+
+### **测试环境搭建**
+
+1. 导入Lombok
+2. 新建实体类Teacher,Students
+3. 建立Mapper接口
+4. 建立Mapper.xml文件
+5. 在核心配置文件中绑定注册我们的Mapper接口或文件
+6. 测试是否查询成功
+
+### 按照查询嵌套处理
+
+```xml
+<?xml version="1.0" encoding="utf8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rzpt.mapper.StudentsMapper">
+    <!--思路：
+            1、查询所有学生信息
+            2、子查询：根据查询出来的学生的tid，寻找对应的老师-->
+    <resultMap id="StudentsTeacher" type="students">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <!--复杂的属性，我们需要单独处理
+                对象：association
+                集合：collection-->
+        <association property="teacher" column="tid" javaType="Teacher" select="getTeacher"/>
+    </resultMap>
+    <!--    查询所有用户-->
+    <select id="getStudents" resultMap="StudentsTeacher">
+       select * from student
+   </select>
+
+    <select id="getTeacher" resultType="Teacher">
+        select * from teacher where id = #{id}
+    </select>
+
+</mapper>
+```
+
+
+
+### 按照结果嵌套处理
+
+```xml
+<resultMap id="StudentsTeacher2" type="students">
+    <result property="id" column="sid"/>
+    <result property="name" column="sname"/>
+    <association property="teacher" javaType="Teacher">
+        <result property="name" column="tname"/>
+    </association>
+</resultMap>
+
+<select id="getStudents2" resultMap="StudentsTeacher2" >
+    select s.id as sid,s.name as sname,t.name as tname
+    from student s,teacher t
+    where s.tid = t.id
+</select>
+```
+
+
+
+回顾多表查询的方式
+
+1. 子查询
+2. 联表查询
+
+
+
+## 11、一对多处理
+
+## 12、动态SQL
